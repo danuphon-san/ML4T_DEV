@@ -495,7 +495,11 @@ def run_phase1_fold(
         rows.append(row)
 
     # DSR across N-sweeps for the winning signal (by RankIC_21d)
-    rows.sort(key=lambda x: x.get("oos_rank_ic_21d", float("-inf")), reverse=True)
+    rows.sort(
+        key=lambda x: abs(x.get("oos_rank_ic_21d", 0.0))
+        if not math.isnan(x.get("oos_rank_ic_21d", float("nan"))) else float("-inf"),
+        reverse=True,
+    )
     winner = rows[0]["name"] if rows else None
     dsr_prob = float("nan")
     if winner is not None:
@@ -522,7 +526,7 @@ def run_phase1_fold(
                 dsr_prob = float("nan")
         rows[0]["dsr_probability"] = dsr_prob
         ric21 = rows[0].get("oos_rank_ic_21d", float("nan"))
-        print(f"  Winner (by RankIC_21d): {winner}  RankIC_21d={ric21:+.4f}  DSR(N-sweep)={dsr_prob:.3f}")
+        print(f"  Winner (by |RankIC_21d|): {winner}  RankIC_21d={ric21:+.4f}  DSR(N-sweep)={dsr_prob:.3f}")
 
     fold_result = {
         "phase": "phase1",
@@ -651,11 +655,15 @@ def run_phase2_fold(
             row[f"trades_k{k}"] = m["n_trades"]
         rows.append(row)
 
-    rows.sort(key=lambda x: x.get("oos_rank_ic_21d", float("-inf")), reverse=True)
+    rows.sort(
+        key=lambda x: abs(x.get("oos_rank_ic_21d", 0.0))
+        if not math.isnan(x.get("oos_rank_ic_21d", float("nan"))) else float("-inf"),
+        reverse=True,
+    )
     winner = rows[0]["name"] if rows else None
     if winner is not None:
         ric21 = rows[0].get("oos_rank_ic_21d", float("nan"))
-        print(f"  Winner (by RankIC_21d): {winner}  RankIC_21d={ric21:+.4f}")
+        print(f"  Winner (by |RankIC_21d|): {winner}  RankIC_21d={ric21:+.4f}")
 
     fold_result = {
         "phase": "phase2",
@@ -681,7 +689,12 @@ def compute_verdicts(
     secondary_mean_rank_ic: float,
     secondary_mean_ic_ir: float,
 ) -> dict[str, dict]:
-    """Apply two-gate pre-committed verdict logic across folds per signal."""
+    """Apply two-gate pre-committed verdict logic across folds per signal.
+
+    Approach A (absolute magnitude): direction-agnostic. A negative spread_t
+    of -13 is treated as equivalent strength to +13. The 'direction' field
+    records the sign of mean RankIC so sign flips across folds are visible.
+    """
     signal_names = list(dict.fromkeys(row["name"] for row in summary_rows))
     out: dict[str, dict] = {}
     for sig in signal_names:
@@ -689,9 +702,10 @@ def compute_verdicts(
         n_primary_pass = sum(
             1 for r in sig_rows
             if not math.isnan(r.get("oos_spread_tstat_21d", float("nan")))
-            and r.get("oos_spread_tstat_21d", 0.0) > primary_tstat
+            and abs(r.get("oos_spread_tstat_21d", 0.0)) > primary_tstat
         )
         primary_passes = n_primary_pass >= primary_folds_required
+
         rank_ic_vals = [
             r.get("oos_rank_ic_21d", float("nan")) for r in sig_rows
             if not math.isnan(r.get("oos_rank_ic_21d", float("nan")))
@@ -702,10 +716,23 @@ def compute_verdicts(
         ]
         mean_rank_ic = sum(rank_ic_vals) / len(rank_ic_vals) if rank_ic_vals else float("nan")
         mean_ic_ir = sum(ic_ir_vals) / len(ic_ir_vals) if ic_ir_vals else float("nan")
+
         secondary_passes = (
-            not math.isnan(mean_rank_ic) and mean_rank_ic > secondary_mean_rank_ic
-            and not math.isnan(mean_ic_ir) and mean_ic_ir > secondary_mean_ic_ir
+            not math.isnan(mean_rank_ic) and abs(mean_rank_ic) > secondary_mean_rank_ic
+            and not math.isnan(mean_ic_ir) and abs(mean_ic_ir) > secondary_mean_ic_ir
         )
+
+        # Sign-flip diagnostic: count how many folds disagree with the dominant sign.
+        if rank_ic_vals:
+            n_pos = sum(1 for v in rank_ic_vals if v > 0)
+            n_neg = sum(1 for v in rank_ic_vals if v < 0)
+            dominant_pos = n_pos >= n_neg
+            n_sign_flips = n_neg if dominant_pos else n_pos
+            direction = "long" if dominant_pos else "short (inverse)"
+        else:
+            n_sign_flips = 0
+            direction = "—"
+
         if primary_passes and secondary_passes:
             verdict = "PASS"
         elif primary_passes:
@@ -718,6 +745,8 @@ def compute_verdicts(
             "n_primary_pass": n_primary_pass,
             "mean_rank_ic_21d": mean_rank_ic,
             "mean_ic_ir_21d": mean_ic_ir,
+            "direction": direction,
+            "n_sign_flips": n_sign_flips,
             "primary_passes": primary_passes,
             "secondary_passes": secondary_passes,
             "verdict": verdict,
@@ -767,11 +796,15 @@ def _verdict_table(verdicts: dict[str, dict], secondary_threshold: float) -> lis
         "",
         "## Signal Validity Verdict",
         "",
-        f"Primary gate  : `oos_spread_tstat_21d > 2.0` in >= 3 of 5 folds",
-        f"Secondary gate: `mean RankIC_21d > {secondary_threshold}` AND `mean IC-IR_21d > 0.3`",
+        f"Primary gate  : `abs(oos_spread_tstat_21d) > 2.0` in >= 3 of 5 folds",
+        f"Secondary gate: `abs(mean RankIC_21d) > {secondary_threshold}` AND `abs(mean IC-IR_21d) > 0.3`",
         "",
-        "| Signal | Pass Folds (Primary) | Mean RankIC 21d | Mean IC-IR 21d | Verdict |",
-        "| --- | ---: | ---: | ---: | --- |",
+        "Direction column indicates dominant sign of RankIC across folds. "
+        "`Sign Flips` counts how many folds disagree with the dominant sign — "
+        "high values indicate regime instability even if magnitudes pass the gates.",
+        "",
+        "| Signal | Pass Folds (Primary) | Mean RankIC 21d | Mean IC-IR 21d | Direction | Sign Flips | Verdict |",
+        "| --- | ---: | ---: | ---: | --- | ---: | --- |",
     ]
     for v in verdicts.values():
         lines.append(
@@ -779,6 +812,8 @@ def _verdict_table(verdicts: dict[str, dict], secondary_threshold: float) -> lis
             f" | {v['n_primary_pass']}/{v['n_folds']}"
             f" | {_fmt(v['mean_rank_ic_21d'])}"
             f" | {_fmt(v['mean_ic_ir_21d'], '.3f')}"
+            f" | {v.get('direction', '—')}"
+            f" | {v.get('n_sign_flips', 0)}/{v['n_folds']}"
             f" | {v['verdict']} |"
         )
     return lines
