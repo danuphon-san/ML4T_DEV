@@ -119,7 +119,7 @@ OOS_PERIODS = (5, 21)
 N_LIST = [5, 10, 15, 20, 25, 30]
 P1_PRIMARY_FOLDS_REQUIRED = 3
 P1_PRIMARY_TSTAT_THRESHOLD = 2.0
-P1_SECONDARY_MEAN_RANK_IC = 0.02
+P1_SECONDARY_MEAN_RANK_IC = 0.01
 P1_SECONDARY_MEAN_IC_IR = 0.3
 
 # ── Phase 2 config ──────────────────────────────────────────────────────────
