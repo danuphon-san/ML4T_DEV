@@ -20,7 +20,8 @@
       "Bash(python3 *)",
       "Bash(uv add *)",
       "Bash(tee /tmp/lgbm_walkforward.log)",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('backtest_walkforward_10yr.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('backtest_walkforward_10yr.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
+      "Bash(python -c ' *)"
     ]
   }
 }
