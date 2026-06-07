@@ -101,6 +101,8 @@ IC_THRESHOLD = 0.0
 SPREAD_T_THRESHOLD = 2.0
 MONOTONICITY_THRESHOLD = 0.5
 
+OOS_PERIODS = (5, 21)
+
 
 # ── Strategy ─────────────────────────────────────────────────────────────────
 
@@ -157,6 +159,58 @@ def screen_signals_on_training(
         except Exception:
             pass
     return results
+
+
+def evaluate_oos_ic(
+    prices_test: pl.DataFrame,
+    signals_df: pl.DataFrame,
+) -> dict[str, float]:
+    """Compute OOS IC (Pearson), Rank IC (Spearman), spread, and monotonicity."""
+    from ml4t.diagnostic import analyze_signal
+
+    factor = signals_df.select([
+        pl.col("timestamp").alias("date"),
+        pl.col("asset"),
+        pl.col("signal").alias("factor"),
+    ])
+    prices = prices_test.select([
+        pl.col("timestamp").alias("date"),
+        pl.col("asset"),
+        pl.col("close").alias("price"),
+    ])
+
+    out: dict[str, float] = {}
+    try:
+        r_pearson = analyze_signal(
+            factor=factor,
+            prices=prices,
+            periods=OOS_PERIODS,
+            quantiles=5,
+            min_assets=10,
+            ic_method="pearson",
+        )
+        r_spearman = analyze_signal(
+            factor=factor,
+            prices=prices,
+            periods=OOS_PERIODS,
+            quantiles=5,
+            min_assets=10,
+            ic_method="spearman",
+        )
+        for p in OOS_PERIODS:
+            k = f"{p}D"
+            out[f"oos_ic_{p}d"] = r_pearson.ic.get(k, float("nan"))
+            out[f"oos_ic_{p}d_tstat"] = r_pearson.ic_t_stat.get(k, float("nan"))
+            out[f"oos_rank_ic_{p}d"] = r_spearman.ic.get(k, float("nan"))
+            out[f"oos_rank_ic_{p}d_tstat"] = r_spearman.ic_t_stat.get(k, float("nan"))
+            out[f"oos_ic_ir_{p}d"] = r_spearman.ic_ir.get(k, float("nan"))
+            out[f"oos_spread_{p}d"] = r_spearman.spread.get(k, float("nan"))
+            out[f"oos_spread_tstat_{p}d"] = r_spearman.spread_t_stat.get(k, float("nan"))
+            out[f"oos_monotonicity_{p}d"] = r_spearman.monotonicity.get(k, float("nan"))
+    except Exception as exc:
+        print(f"    OOS IC eval error: {exc}")
+
+    return out
 
 
 def build_composite(frame: pl.DataFrame, signal_names: list[str]) -> pl.Series:
@@ -262,42 +316,69 @@ def run_fold(fold: Fold, model_frame: pl.DataFrame, min_train_years: int, out_di
     fold_dir = out_dir / f"fold_{fold.idx:02d}"
     fold_dir.mkdir(parents=True, exist_ok=True)
 
+    # ── OOS IC evaluation (primary: signal validity) ──────────────────────────
+    print("  Evaluating OOS IC on test period...")
+    oos_ic_map: dict[str, dict[str, float]] = {}
+    for name, sdf in candidates.items():
+        oos = evaluate_oos_ic(prices_test, sdf)
+        oos_ic_map[name] = oos
+        ric5 = oos.get("oos_rank_ic_5d", float("nan"))
+        ric21 = oos.get("oos_rank_ic_21d", float("nan"))
+        t21 = oos.get("oos_rank_ic_21d_tstat", float("nan"))
+        print(f"    {name}: RankIC_5d={ric5:+.4f}  RankIC_21d={ric21:+.4f} (t={t21:.2f})")
+
+    # ── Backtest (supplementary) ──────────────────────────────────────────────
     rows: list[dict] = []
     returns_matrix: list[list[float]] = []
     names: list[str] = []
 
     for name, sdf in candidates.items():
+        oos = oos_ic_map.get(name, {})
+        row: dict = {
+            "name": name,
+            "fold": fold.idx,
+            "min_train_years": min_train_years,
+            **oos,
+            "total_return_pct": float("nan"),
+            "sharpe": float("nan"),
+            "max_drawdown": float("nan"),
+            "n_trades": 0,
+            "dsr_probability": float("nan"),
+        }
         try:
             result, daily_ret = run_one(name, prices_test, sdf, fold_dir)
             names.append(name)
             returns_matrix.append(daily_ret)
-            rows.append({
-                "name": name,
-                "fold": fold.idx,
-                "min_train_years": min_train_years,
+            row.update({
                 "total_return_pct": float(result.metrics.get("total_return_pct", 0.0)),
                 "sharpe": float(result.metrics.get("sharpe", 0.0)),
                 "max_drawdown": float(result.metrics.get("max_drawdown", 0.0)),
                 "n_trades": len(result.trades),
             })
-            print(f"    {name}: Sharpe={rows[-1]['sharpe']:.2f}  Return={rows[-1]['total_return_pct']:.1f}%")
+            ric21 = oos.get("oos_rank_ic_21d", float("nan"))
+            print(f"    {name}: RankIC_21d={ric21:+.4f}  Sharpe={row['sharpe']:.2f} (supplementary)")
         except Exception as exc:
-            print(f"    {name}: FAIL {exc}")
+            print(f"    {name}: backtest FAIL {exc}")
+        rows.append(row)
 
     if rows:
-        rows.sort(key=lambda x: x["sharpe"], reverse=True)
+        rows.sort(key=lambda x: x.get("oos_rank_ic_21d", float("-inf")), reverse=True)
         winner = rows[0]["name"]
         try:
-            dsr = deflated_sharpe_ratio(returns_matrix, frequency="daily", correlation_method="effective_rank", min_k_eff=2.0)
-            for row in rows:
-                row["dsr_probability"] = float(dsr.probability) if row["name"] == winner else float("nan")
-            dsr_prob = float(dsr.probability)
+            if len(returns_matrix) >= 2:
+                dsr = deflated_sharpe_ratio(returns_matrix, frequency="daily", correlation_method="effective_rank", min_k_eff=2.0)
+                for row in rows:
+                    row["dsr_probability"] = float(dsr.probability) if row["name"] == winner else float("nan")
+                dsr_prob = float(dsr.probability)
+            else:
+                dsr_prob = float("nan")
         except Exception:
             dsr_prob = float("nan")
             for row in rows:
                 row["dsr_probability"] = float("nan")
 
-        print(f"  Winner: {winner}  DSR={dsr_prob:.3f}")
+        ric21 = rows[0].get("oos_rank_ic_21d", float("nan"))
+        print(f"  Winner (by RankIC_21d): {winner}  RankIC_21d={ric21:+.4f}  DSR={dsr_prob:.3f}")
     else:
         dsr_prob = float("nan")
 
@@ -366,6 +447,54 @@ def main() -> None:
         for row in fr.get("results", []):
             summary_rows.append(row)
 
+    def _fmt(v: float, fmt: str = ".4f") -> str:
+        return "—" if math.isnan(v) else format(v, fmt)
+
+    # ── Per-signal verdict (pre-committed before inspecting results) ──────────
+    # Primary gate : oos_spread_tstat_21d > 2.0 in >= 3 of 5 folds
+    # Secondary gate: mean oos_rank_ic_21d > 0.02 AND mean oos_ic_ir_21d > 0.3
+    # Verdict       : PASS (both gates), WEAK (primary only), FAIL (primary fails)
+    signal_names_ordered = list(dict.fromkeys(row["name"] for row in summary_rows))
+    verdicts: dict[str, dict] = {}
+    for sig in signal_names_ordered:
+        sig_rows = [r for r in summary_rows if r["name"] == sig]
+        n_primary_pass = sum(
+            1 for r in sig_rows
+            if not math.isnan(r.get("oos_spread_tstat_21d", float("nan")))
+            and r.get("oos_spread_tstat_21d", 0.0) > 2.0
+        )
+        primary_passes = n_primary_pass >= 3
+        rank_ic_vals = [
+            r.get("oos_rank_ic_21d", float("nan")) for r in sig_rows
+            if not math.isnan(r.get("oos_rank_ic_21d", float("nan")))
+        ]
+        ic_ir_vals = [
+            r.get("oos_ic_ir_21d", float("nan")) for r in sig_rows
+            if not math.isnan(r.get("oos_ic_ir_21d", float("nan")))
+        ]
+        mean_rank_ic = sum(rank_ic_vals) / len(rank_ic_vals) if rank_ic_vals else float("nan")
+        mean_ic_ir = sum(ic_ir_vals) / len(ic_ir_vals) if ic_ir_vals else float("nan")
+        secondary_passes = (
+            not math.isnan(mean_rank_ic) and mean_rank_ic > 0.02
+            and not math.isnan(mean_ic_ir) and mean_ic_ir > 0.3
+        )
+        if primary_passes and secondary_passes:
+            verdict = "PASS"
+        elif primary_passes:
+            verdict = "WEAK"
+        else:
+            verdict = "FAIL"
+        verdicts[sig] = {
+            "signal": sig,
+            "n_folds": len(sig_rows),
+            "n_primary_pass": n_primary_pass,
+            "mean_rank_ic_21d": mean_rank_ic,
+            "mean_ic_ir_21d": mean_ic_ir,
+            "primary_passes": primary_passes,
+            "secondary_passes": secondary_passes,
+            "verdict": verdict,
+        }
+
     # Build aggregate report
     report = [
         "# Walk-Forward Backtest — 10-Year SP500 (Point-in-Time)",
@@ -381,17 +510,65 @@ def main() -> None:
             f"| {fold.idx} | {fold.train_start} | {fold.train_end} | {fold.test_start} | {fold.test_end} |"
         )
 
+    # Signal validity verdict summary
     report += [
         "",
-        "| Fold | Strategy | Return % | Sharpe | Max DD | Trades | DSR |",
+        "## Signal Validity Verdict",
+        "",
+        "Primary gate  : `oos_spread_tstat_21d > 2.0` in >= 3 of 5 folds",
+        "Secondary gate: `mean RankIC_21d > 0.02` AND `mean IC-IR_21d > 0.3`",
+        "",
+        "| Signal | Pass Folds (Primary) | Mean RankIC 21d | Mean IC-IR 21d | Verdict |",
+        "| --- | ---: | ---: | ---: | --- |",
+    ]
+    for v in verdicts.values():
+        report.append(
+            f"| {v['signal']}"
+            f" | {v['n_primary_pass']}/{v['n_folds']}"
+            f" | {_fmt(v['mean_rank_ic_21d'])}"
+            f" | {_fmt(v['mean_ic_ir_21d'], '.3f')}"
+            f" | {v['verdict']} |"
+        )
+
+    # Primary: OOS IC metrics (signal validity)
+    report += [
+        "",
+        "## OOS Signal Validity (Primary)",
+        "",
+        "| Fold | Signal | RankIC 5d | t(5d) | RankIC 21d | t(21d) | IC 21d | t(21d) | Spread T 21d | Mono 21d |",
+        "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for row in summary_rows:
+        report.append(
+            f"| {row['fold']} | {row['name']}"
+            f" | {_fmt(row.get('oos_rank_ic_5d', float('nan')))}"
+            f" | {_fmt(row.get('oos_rank_ic_5d_tstat', float('nan')), '.2f')}"
+            f" | {_fmt(row.get('oos_rank_ic_21d', float('nan')))}"
+            f" | {_fmt(row.get('oos_rank_ic_21d_tstat', float('nan')), '.2f')}"
+            f" | {_fmt(row.get('oos_ic_21d', float('nan')))}"
+            f" | {_fmt(row.get('oos_ic_21d_tstat', float('nan')), '.2f')}"
+            f" | {_fmt(row.get('oos_spread_tstat_21d', float('nan')), '.2f')}"
+            f" | {_fmt(row.get('oos_monotonicity_21d', float('nan')), '.3f')}"
+            f" |"
+        )
+
+    # Supplementary: backtest metrics
+    report += [
+        "",
+        "## Backtest Metrics (Supplementary)",
+        "",
+        "| Fold | Signal | Return % | Sharpe | Max DD | Trades | DSR |",
         "| --- | --- | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in summary_rows:
-        dsr_value = row.get("dsr_probability", float("nan"))
-        dsr_str = f"{dsr_value:.3f}" if not math.isnan(dsr_value) else "—"
         report.append(
-            f"| {row['fold']} | {row['name']} | {row['total_return_pct']:.2f}"
-            f" | {row['sharpe']:.2f} | {row['max_drawdown']:.3f} | {row['n_trades']} | {dsr_str} |"
+            f"| {row['fold']} | {row['name']}"
+            f" | {_fmt(row.get('total_return_pct', float('nan')), '.2f')}"
+            f" | {_fmt(row.get('sharpe', float('nan')), '.2f')}"
+            f" | {_fmt(row.get('max_drawdown', float('nan')), '.3f')}"
+            f" | {row.get('n_trades', 0)}"
+            f" | {_fmt(row.get('dsr_probability', float('nan')), '.3f')}"
+            f" |"
         )
 
     report_text = "\n".join(report) + "\n"
@@ -405,6 +582,7 @@ def main() -> None:
         "executed_folds": [fold.__dict__ for fold in folds_to_run],
         "folds": all_results,
         "rows": summary_rows,
+        "verdicts": list(verdicts.values()),
     }
     (out_dir / f"{args.prefix}_walkforward_{label}_summary.json").write_text(json.dumps(summary, indent=2))
 

@@ -19,7 +19,8 @@
       "Bash(awk '{print \"Still running — CPU: \"$3\"% | Elapsed: \"$10}')",
       "Bash(python3 *)",
       "Bash(uv add *)",
-      "Bash(tee /tmp/lgbm_walkforward.log)"
+      "Bash(tee /tmp/lgbm_walkforward.log)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('backtest_walkforward_10yr.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")"
     ]
   }
 }
