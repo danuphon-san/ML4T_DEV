@@ -1,0 +1,218 @@
+features:
+  # ── MOMENTUM (31) ────────────────────────────────────────────────────────
+  - name: adx
+    params: {period: 14}
+  - name: adxr
+    params: {period: 14}
+  - name: apo
+    params: {fast: 12, slow: 26}
+  - name: aroon
+    params: {timeperiod: 14}
+  - name: aroonosc
+    params: {timeperiod: 14}
+  - name: bop
+  - name: cci
+    params: {period: 14}
+  - name: cmo
+    params: {period: 14}
+  - name: dx
+    params: {period: 14}
+  - name: imi
+    params: {period: 14}
+  - name: macd
+    params: {fast: 12, slow: 26, signal: 9}
+  - name: macdfix
+    params: {signal: 9}
+  - name: mfi
+    params: {period: 14}
+  - name: minus_di
+    params: {period: 14}
+  - name: minus_dm
+    params: {period: 14}
+  - name: mom
+    params: {period: 10}
+  - name: plus_di
+    params: {period: 14}
+  - name: plus_dm
+    params: {period: 14}
+  - name: ppo
+    params: {fast: 12, slow: 26}
+  - name: roc
+    params: {period: 10}
+  - name: rocp
+    params: {period: 10}
+  - name: rocr
+    params: {period: 10}
+  - name: rocr100
+    params: {period: 10}
+  - name: rsi
+    params: {period: 14}
+  - name: sar
+    params: {acceleration: 0.02, maximum: 0.2}
+  - name: stochastic
+    params: {fastk_period: 14, slowk_period: 1, slowd_period: 3}
+  - name: stochf
+    params: {fastk_period: 5, fastd_period: 3}
+  - name: stochrsi
+    params: {period: 14}
+  - name: trix
+    params: {period: 30}
+  - name: ultosc
+    params: {timeperiod1: 7, timeperiod2: 14, timeperiod3: 28}
+  - name: willr
+    params: {period: 14}
+
+  # ── VOLATILITY (15) ──────────────────────────────────────────────────────
+  - name: atr
+    params: {period: 14}
+  - name: bollinger_bands
+    params: {period: 20, std_dev: 2.0}
+  - name: conditional_volatility_ratio
+    params: {period: 20}
+  - name: ewma_volatility
+    params: {span: 20}
+  - name: garch_forecast
+    params: {omega: 0.00001, alpha: 0.1, beta: 0.85}
+  - name: garman_klass_volatility
+    params: {period: 20}
+  - name: natr
+    params: {period: 14}
+  - name: parkinson_volatility
+    params: {period: 20}
+  - name: realized_volatility
+    params: {period: 20}
+  - name: rogers_satchell_volatility
+    params: {period: 20}
+  - name: trange
+  - name: volatility_of_volatility
+    params: {period: 20}
+  - name: volatility_percentile_rank
+  - name: volatility_regime_probability
+    params: {period: 20}
+  - name: yang_zhang_volatility
+    params: {period: 20}
+
+  # ── TREND (10) ───────────────────────────────────────────────────────────
+  - name: dema
+    params: {period: 30}
+  - name: donchian_channels
+    params: {period: 20}
+  - name: ema
+    params: {period: 20}
+  - name: kama
+    params: {period: 30}
+  - name: midpoint
+    params: {period: 14}
+  - name: sma
+    params: {period: 20}
+  - name: t3
+    params: {period: 5}
+  - name: tema
+    params: {period: 30}
+  - name: trima
+    params: {period: 30}
+  - name: wma
+    params: {period: 20}
+
+  # ── VOLUME (3) ───────────────────────────────────────────────────────────
+  - name: ad
+  - name: adosc
+    params: {fast: 3, slow: 10}
+  - name: obv
+
+  # ── MICROSTRUCTURE (12, OHLCV-compatible only) ───────────────────────────
+  - name: amihud_illiquidity
+    params: {period: 20}
+  - name: effective_tick_rule
+  - name: kyle_lambda
+    params: {period: 20}
+  - name: order_flow_imbalance
+    params: {period: 20}
+  - name: price_impact_ratio
+    params: {period: 20}
+  - name: quote_stuffing_indicator
+    params: {period: 20}
+  - name: realized_spread
+    params: {period: 20}
+  - name: roll_spread_estimator
+    params: {period: 20}
+  - name: trade_intensity
+    params: {period: 20}
+  - name: volume_at_price_ratio
+    params: {period: 20}
+  - name: volume_synchronicity
+    params: {period: 20}
+  - name: volume_weighted_price_momentum
+    params: {period: 20}
+
+  # ── STATISTICS (14) ──────────────────────────────────────────────────────
+  - name: avgdev
+    params: {period: 14}
+  - name: coefficient_of_variation
+    params: {period: 20}
+  - name: linearreg
+    params: {period: 14}
+  - name: linearreg_angle
+    params: {period: 14}
+  - name: linearreg_intercept
+    params: {period: 14}
+  - name: linearreg_slope
+    params: {period: 14}
+  - name: rolling_cv_zscore
+    params: {period: 20}
+  - name: rolling_drift
+    params: {period: 20}
+  - name: rolling_kl_divergence
+    params: {period: 20}
+  - name: rolling_wasserstein
+    params: {period: 20}
+  - name: stddev
+    params: {period: 20}
+  - name: tsf
+    params: {period: 14}
+  - name: var
+    params: {period: 20}
+  - name: variance_ratio
+    params: {period: 20}
+
+  # ── ML (5, standalone-compatible only) ───────────────────────────────────
+  - name: ffdiff
+  - name: rolling_entropy
+    params: {period: 20}
+  - name: rolling_entropy_lz
+    params: {period: 20}
+  - name: rolling_entropy_plugin
+    params: {period: 20}
+  - name: volatility_adjusted_returns
+    params: {period: 20}
+
+  # ── REGIME (4) ───────────────────────────────────────────────────────────
+  - name: choppiness_index
+    params: {period: 14}
+  - name: fractal_efficiency
+    params: {period: 14}
+  - name: hurst_exponent
+    params: {period: 50}
+  - name: trend_intensity_index
+    params: {period: 20}
+
+  # ── RISK (6) ─────────────────────────────────────────────────────────────
+  - name: downside_deviation
+    params: {period: 20}
+  - name: higher_moments
+    params: {period: 20}
+  - name: maximum_drawdown
+    params: {period: 20}
+  - name: risk_adjusted_returns
+    params: {period: 20}
+  - name: tail_ratio
+    params: {period: 20}
+  - name: ulcer_index
+    params: {period: 14}
+
+  # ── PRICE TRANSFORM (5) ──────────────────────────────────────────────────
+  - name: avgprice
+  - name: medprice
+  - name: midprice
+  - name: typprice
+  - name: wclprice

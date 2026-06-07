@@ -1,0 +1,31 @@
+schema_version: 1
+active_strategy_id: log_volume
+source_prefix: sp500_10yr
+rebalance_cadence:
+  kind: every_n_signal_dates
+  every_n_signals: 5
+  anchor_date: 2026-03-05
+sizing_rule:
+  kind: top_n_equal_weight
+  top_n: 5
+  gross_exposure: 0.75
+execution_policy:
+  quantity_policy: fractional
+  min_trade_value: 0.00
+  min_delta_quantity: 0.000000
+artifacts:
+  signal:
+    path: ../outputs/sp500_10yr/sp500_10yr_model_frame.parquet
+    date_col: timestamp
+    asset_col: symbol
+    value_col: log_volume
+  price:
+    path: ../outputs/sp500_10yr/sp500_10yr_model_frame.parquet
+    date_col: timestamp
+    asset_col: symbol
+    value_col: close
+notes: >
+  Manual promotion registry for the shared active strategy. Current promotion is
+  the validated sp500_10yr log_volume + WeeklyLongOnly5 baseline from the
+  2026-06-06 handoff. The model frame is used as the promoted signal/price source
+  until a slimmer production artifact is generated.

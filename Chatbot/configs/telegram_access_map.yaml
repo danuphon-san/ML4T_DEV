@@ -1,0 +1,19 @@
+portfolios:
+  example-portfolio:
+    chats:
+    - 123456789
+    users:
+    - 123456789
+    delivery_chat_id: 123456789
+  SP500-baw:
+    chats:
+    - 1103340047
+    users:
+    - 1103340047
+    delivery_chat_id: 1103340047
+  SP500-KAN:
+    chats:
+    - 8165294983
+    users:
+    - 8165294983
+    delivery_chat_id: 8165294983

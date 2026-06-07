@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Portfolio App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="__MINI_APP_PATH__/assets/app.css?v=__ASSET_VERSION__">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Telegram Mini App</p>
+          <h1 id="app-title">Portfolio App</h1>
+        </div>
+        <button id="refresh-button" class="ghost-button" type="button">Refresh</button>
+      </header>
+
+      <section class="portfolio-switcher panel">
+        <label for="portfolio-select">Portfolio</label>
+        <select id="portfolio-select"></select>
+        <p id="identity-line" class="hint-text"></p>
+      </section>
+
+      <section class="hero panel">
+        <div>
+          <p class="eyebrow">Estimated Total Value</p>
+          <h2 id="equity-value">$0.00</h2>
+          <p id="portfolio-headline" class="subheadline">Waiting for portfolio data</p>
+        </div>
+        <div class="hero-actions">
+          <button id="jump-status" class="primary-button" type="button">Portfolio Status</button>
+          <button id="jump-rebalance" class="primary-button" type="button">View Rebalance</button>
+          <button id="jump-fill" class="secondary-button" type="button">Record Fill</button>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <article class="stat-card panel">
+          <p>Cash</p>
+          <strong id="cash-value">$0.00</strong>
+        </article>
+        <article class="stat-card panel">
+          <p>Holdings</p>
+          <strong id="holdings-value">$0.00</strong>
+        </article>
+        <article class="stat-card panel">
+          <p>Realized P&amp;L</p>
+          <strong id="realized-value">$0.00</strong>
+        </article>
+        <article class="stat-card panel">
+          <p>Unrealized P&amp;L</p>
+          <strong id="unrealized-value">$0.00</strong>
+        </article>
+      </section>
+
+      <nav class="tab-strip panel">
+        <button class="tab-button is-active" data-tab="overview" type="button">Overview</button>
+        <button class="tab-button" data-tab="holdings" type="button">Holdings</button>
+        <button class="tab-button" data-tab="rebalance" type="button">Rebalance</button>
+        <button class="tab-button" data-tab="activity" type="button">Activity</button>
+      </nav>
+
+      <main>
+        <section id="tab-overview" class="tab-panel is-active">
+          <article class="panel drift-card">
+            <div class="panel-heading">
+              <h3>Drift Headline</h3>
+              <span id="rebalance-badge" class="pill">No data</span>
+            </div>
+            <p id="top-drift-line" class="headline-copy">No drift loaded yet.</p>
+            <div id="overview-metrics" class="metric-row"></div>
+            <div id="overview-warnings" class="warning-list" hidden></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Quick Guidance</h3>
+              <span class="hint-text">What to do next</span>
+            </div>
+            <ul id="quick-guidance" class="stack-list"></ul>
+          </article>
+        </section>
+
+        <section id="tab-holdings" class="tab-panel">
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Positions</h3>
+              <span class="hint-text">Actual holdings only</span>
+            </div>
+            <div id="holdings-list" class="stack-list"></div>
+          </article>
+        </section>
+
+        <section id="tab-rebalance" class="tab-panel">
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Target vs Actual</h3>
+              <span id="rebalance-caption" class="hint-text"></span>
+            </div>
+            <div id="rebalance-list" class="stack-list"></div>
+          </article>
+        </section>
+
+        <section id="tab-activity" class="tab-panel">
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Recent Fills</h3>
+              <span class="hint-text">Latest ledger events</span>
+            </div>
+            <div id="activity-list" class="stack-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <h3>Latest Daily Run</h3>
+            </div>
+            <div id="daily-run-card" class="daily-card"></div>
+          </article>
+        </section>
+      </main>
+
+      <section id="fill-panel" class="panel fill-panel">
+        <div class="panel-heading">
+          <div>
+            <h3>Record Fill</h3>
+            <p class="hint-text">Writes to the same manual ledger as CLI and bot commands</p>
+          </div>
+        </div>
+        <div class="fill-body">
+          <form id="fill-form" class="fill-grid">
+            <label>
+              Trade Date
+              <input id="trade-date" name="trade_date" type="date" required>
+            </label>
+            <label>
+              Side
+              <select id="fill-side" name="side" required>
+                <option value="buy">Buy</option>
+                <option value="sell">Sell</option>
+              </select>
+            </label>
+            <label>
+              Symbol
+              <input id="fill-symbol" name="symbol" type="text" autocomplete="off" required>
+            </label>
+            <label>
+              Quantity
+              <input id="fill-quantity" name="quantity" type="number" step="0.0001" min="0" required>
+            </label>
+            <label>
+              Price
+              <input id="fill-price" name="fill_price" type="number" step="0.0001" min="0" required>
+            </label>
+            <label>
+              Commission
+              <input id="fill-commission" name="commission" type="number" step="0.0001" min="0" value="0">
+            </label>
+            <label>
+              Slippage
+              <input id="fill-slippage" name="slippage" type="number" step="0.0001" min="0" value="0">
+            </label>
+            <label class="fill-notes">
+              Notes
+              <textarea id="fill-notes" name="notes" rows="3"></textarea>
+            </label>
+            <button class="primary-button submit-button" type="submit">Submit Fill</button>
+          </form>
+        </div>
+      </section>
+
+      <div id="toast" class="toast" hidden></div>
+    </div>
+
+    <script>
+      window.__PORTFOLIO_APP_CONFIG__ = __MINI_APP_BOOTSTRAP__;
+    </script>
+    <script src="__MINI_APP_PATH__/assets/app.js?v=__ASSET_VERSION__" defer></script>
+  </body>
+</html>

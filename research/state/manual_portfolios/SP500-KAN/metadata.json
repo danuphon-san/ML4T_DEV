@@ -1,0 +1,11 @@
+{
+  "base_currency": "USD",
+  "created_at": "2026-06-06T13:14:27+00:00",
+  "display_name": "SP500-KAN",
+  "imported_holdings": [],
+  "notes": "",
+  "onboarding_mode": "cash_only",
+  "portfolio_id": "SP500-KAN",
+  "schema_version": 1,
+  "starting_cash": 3000.0
+}

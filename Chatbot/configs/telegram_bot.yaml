@@ -1,0 +1,20 @@
+bot_token: env:TELEGRAM_BOT_TOKEN
+public_webhook_url: https://bot.kb-design.uk/telegram/webhook
+webhook_secret_token: env:TELEGRAM_WEBHOOK_SECRET
+add_user_password: env:TELEGRAM_ADD_USER_PASSWORD
+webhook_path: /telegram/webhook
+mini_app_path: /mini-app
+mini_app_title: Portfolio App
+bind_host: 127.0.0.1
+bind_port: 8080
+state_root: ../../research/state/manual_portfolios
+promotion_registry_path: ../../research/configs/manual_active_strategy.yaml
+access_map_path: ./telegram_access_map.yaml
+register_webhook_on_startup: true
+strict_portfolio_validation: false
+dedupe_journal_path: ../../research/state/manual_portfolios/.telegram/processed_updates.jsonl
+notification_toggles:
+  daily_summary: true
+  drift_summary: true
+  rebalance_instructions: true
+  fill_confirmations: true

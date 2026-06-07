@@ -1,0 +1,24 @@
+{
+  "cash": 5242.94,
+  "holdings": {
+    "AAPL": {
+      "avg_cost": 201.24976566893707,
+      "quantity": 8.0015
+    },
+    "AMD": {
+      "avg_cost": 201.77500088750045,
+      "quantity": 5.6338
+    },
+    "NVDA": {
+      "avg_cost": 201.0,
+      "quantity": 10.0
+    }
+  },
+  "last_marks": {},
+  "last_processed_date": null,
+  "last_unrealized_pnl": 0.0,
+  "portfolio_id": "SP500-baw",
+  "realized_pnl": 0.0,
+  "schema_version": 1,
+  "updated_at": "2026-06-06T09:21:05+00:00"
+}

@@ -1,0 +1,19 @@
+features:
+  - name: rsi
+    params:
+      period: 14
+  - name: macd
+    params:
+      fast: 12
+      slow: 26
+      signal: 9
+  - name: atr
+    params:
+      period: 14
+  - name: obv
+  - name: sma
+    params:
+      period: 20
+  - name: ema
+    params:
+      period: 20

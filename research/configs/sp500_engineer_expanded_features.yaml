@@ -1,0 +1,74 @@
+features:
+  - name: rsi
+    params:
+      period: 14
+  - name: macd
+    params:
+      fast: 12
+      slow: 26
+      signal: 9
+  - name: adx
+    params:
+      period: 14
+
+  - name: sma
+    params:
+      period: 20
+  - name: ema
+    params:
+      period: 20
+  - name: kama
+    params:
+      period: 30
+
+  - name: atr
+    params:
+      period: 14
+  - name: natr
+    params:
+      period: 14
+  - name: bollinger_bands
+    params:
+      period: 20
+      std_dev: 2.0
+
+  - name: stddev
+    params:
+      period: 20
+  - name: linearreg_slope
+    params:
+      period: 20
+  - name: var
+    params:
+      period: 20
+
+  - name: obv
+  - name: ad
+  - name: adosc
+    params:
+      fast: 3
+      slow: 10
+
+  - name: hurst_exponent
+    params:
+      period: 100
+  - name: choppiness_index
+    params:
+      period: 14
+  - name: trend_intensity_index
+    params:
+      period: 20
+
+  - name: maximum_drawdown
+    params:
+      period: 20
+  - name: downside_deviation
+    params:
+      period: 20
+  - name: ulcer_index
+    params:
+      period: 14
+
+  - name: typprice
+  - name: wclprice
+  - name: avgprice

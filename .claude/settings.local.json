@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx skills@latest *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(npx *)",
+      "Bash(python3 -c ' *)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(uv run *)",
+      "Bash(uv sync *)",
+      "Bash(xargs cat)",
+      "Bash(nohup uv run python fetch_sp500_historical_extended.py --mode historical-only --chunk-size 25)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(cat)",
+      "Bash(nohup uv run python /tmp/sp500_extend_fetch.py)",
+      "Bash(nohup sh -c 'cd /Users/mit/Project/ML4T/research && uv run python build_sp500_10yr_dataset.py')",
+      "Bash(nohup sh -c 'cd /Users/mit/Project/ML4T/research && uv run python screen_sp500_all_signals.py --prefix sp500_10yr')",
+      "Bash(awk '{print \"CPU: \"$3\"% | RAM: \"$4\"% | Runtime: \"$10}')",
+      "Bash(awk '{print \"Still running — CPU: \"$3\"% | Elapsed: \"$10}')",
+      "Bash(python3 *)",
+      "Bash(uv add *)",
+      "Bash(tee /tmp/lgbm_walkforward.log)"
+    ]
+  }
+}

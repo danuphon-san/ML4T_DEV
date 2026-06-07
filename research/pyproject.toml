@@ -1,0 +1,49 @@
+[project]
+name = "ml4t-research"
+version = "0.1.0"
+description = "ML4T research pipeline scripts"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.10.0",
+    "aiogram>=3.20.0,<4.0.0",
+    "ml4t-engineer[ta,store]",
+    "ml4t-models",
+    "ml4t-diagnostic",
+    "polars>=0.20.0",
+    "numpy>=1.24.0,<2.5",
+    "pyyaml>=6.0.0",
+    "pyarrow>=14.0.0",
+    "pandas>=2.0.0",
+    "requests>=2.31.0",
+    "lxml>=5.0.0",
+    "html5lib>=1.1",
+    "lightgbm>=4.6.0",
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+onboard-portfolio = "manual_portfolio.cli:onboard_portfolio_main"
+record-fill = "manual_portfolio.cli:record_fill_main"
+portfolio-status = "manual_portfolio.cli:portfolio_status_main"
+daily-run = "manual_portfolio.cli:daily_run_main"
+daily-workflow = "manual_portfolio.cli:daily_workflow_main"
+scheduled-daily-run = "manual_portfolio.cli:scheduled_daily_run_main"
+run-telegram-bot = "manual_portfolio.cli:run_telegram_bot_main"
+send-telegram-notification = "manual_portfolio.cli:send_telegram_notification_main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["manual_portfolio"]
+
+[tool.uv.sources]
+ml4t-engineer   = { path = "../engineer" }
+ml4t-models     = { path = "../models" }
+ml4t-diagnostic = { path = "../diagnostic" }
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.16",
+]
